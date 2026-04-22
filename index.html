@@ -360,15 +360,40 @@
 <script>
   const concerts = [
     { id: 1, name: "Taylor Swift — Eras Tour", venue: "MetLife Stadium", date: "Jun 14, 2026",
+      ticketType: "reserved",
+      stubhubUrl: "https://www.stubhub.com/taylor-swift-tickets/performer/100235/",
+      seatgeekUrl: "https://seatgeek.com/taylor-swift-tickets",
+      ticketmasterUrl: "https://www.ticketmaster.com/taylor-swift-tickets/artist/1094215",
+      vividseatsUrl: "https://www.vividseats.com/taylor-swift-tickets--music-pop/performer/9280",
       platforms: { StubHub: { price: 389, prev: 420, avail: "good" }, SeatGeek: { price: 361, prev: 355, avail: "low" }, Ticketmaster: { price: 410, prev: 410, avail: "good" }, "Vivid Seats": { price: 375, prev: 395, avail: "good" } } },
     { id: 2, name: "Kendrick Lamar — GNX Tour", venue: "Barclays Center", date: "Jul 2, 2026",
+      ticketType: "ga",
+      stubhubUrl: "https://www.stubhub.com/kendrick-lamar-tickets/performer/966718/",
+      seatgeekUrl: "https://seatgeek.com/kendrick-lamar-tickets",
+      ticketmasterUrl: "https://www.ticketmaster.com/kendrick-lamar-tickets/artist/1291440",
+      vividseatsUrl: "https://www.vividseats.com/kendrick-lamar-tickets--music-rap-hip-hop/performer/1450685",
       platforms: { StubHub: { price: 210, prev: 230, avail: "good" }, SeatGeek: { price: 198, prev: 198, avail: "good" }, Ticketmaster: { price: 225, prev: 200, avail: "low" }, "Vivid Seats": { price: 205, prev: 215, avail: "good" } } },
     { id: 3, name: "Chappell Roan", venue: "Madison Square Garden", date: "Aug 8, 2026",
+      ticketType: "ga",
+      stubhubUrl: "https://www.stubhub.com/chappell-roan-tickets/performer/17841951/",
+      seatgeekUrl: "https://seatgeek.com/chappell-roan-tickets",
+      ticketmasterUrl: "https://www.ticketmaster.com/chappell-roan-tickets/artist/2897951",
+      vividseatsUrl: "https://www.vividseats.com/chappell-roan-tickets--music-pop/performer/1572546",
       platforms: { StubHub: { price: 145, prev: 160, avail: "low" }, SeatGeek: { price: 139, prev: 142, avail: "low" }, Ticketmaster: { price: 155, prev: 148, avail: "out" }, "Vivid Seats": { price: 149, prev: 155, avail: "low" } } },
     { id: 4, name: "Billie Eilish — Hit Me Hard", venue: "UBS Arena", date: "Sep 19, 2026",
+      ticketType: "reserved",
+      stubhubUrl: "https://www.stubhub.com/billie-eilish-tickets/performer/7304082/",
+      seatgeekUrl: "https://seatgeek.com/billie-eilish-tickets",
+      ticketmasterUrl: "https://www.ticketmaster.com/billie-eilish-tickets/artist/2358445",
+      vividseatsUrl: "https://www.vividseats.com/billie-eilish-tickets--music-pop/performer/1100561",
       platforms: { StubHub: { price: 275, prev: 260, avail: "good" }, SeatGeek: { price: 262, prev: 255, avail: "good" }, Ticketmaster: { price: 290, prev: 285, avail: "good" }, "Vivid Seats": { price: 270, prev: 278, avail: "good" } } },
     { id: 5, name: "King Gizzard & the Lizard Wizard", venue: "Forest Hills Stadium", date: "Aug 22, 2026",
       tag: "Night 3 — rave set",
+      ticketType: "reserved",
+      stubhubUrl: "https://www.stubhub.com/king-gizzard-and-the-lizard-wizard-tickets/performer/5468698/",
+      seatgeekUrl: "https://seatgeek.com/king-gizzard-and-the-lizard-wizard-tickets",
+      ticketmasterUrl: "https://www.ticketmaster.com/king-gizzard-and-the-lizard-wizard-tickets/artist/1970014",
+      vividseatsUrl: "https://www.vividseats.com/king-gizzard-the-lizard-wizard-tickets--music-rock/performer/671901",
       platforms: { StubHub: { price: 168, prev: 168, avail: "low" }, SeatGeek: { price: 142, prev: 155, avail: "low" }, Ticketmaster: { price: 175, prev: 170, avail: "low" }, "Vivid Seats": { price: 159, prev: 163, avail: "low" } } },
   ];
 
@@ -415,10 +440,12 @@
         : c.tag ? `<span class="badge badge-purple">${c.tag}</span>`
         : `<span class="badge badge-track">Tracking</span>`;
       const oa = overallAvail(c);
+      const ttLabel = c.ticketType === "ga" ? "GA floor" : c.ticketType === "reserved" ? "Reserved" : "";
+      const ttBadge = ttLabel ? `<span class="badge badge-track" style="margin-left:4px;">${ttLabel}</span>` : "";
       return `<div class="concert-card" onclick="openDetail(${c.id})">
         <div class="card-top"><div class="card-name">${c.name}</div>${badge}</div>
-        <div class="card-meta">${c.venue} · ${c.date}</div>
-        <div class="card-bottom">
+        <div class="card-meta" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">${c.venue} · ${c.date}${ttBadge}</div>
+        <div class="card-bottom" style="margin-top:12px;">
           <div><div class="card-price-label">Lowest price</div><div class="card-price">$${low}</div></div>
           <div class="card-avail">
             <div class="card-avail-label">Availability</div>
@@ -441,9 +468,18 @@
       const cls = i === arr.length - 1 ? "current" : v === min ? "low" : v === max ? "high" : "";
       return `<div class="sbar ${cls}" style="height:${h}px;" title="$${v}"></div>`;
     }).join("");
+    const ttLabel = c.ticketType === "ga" ? "GA floor" : c.ticketType === "reserved" ? "Reserved (bowl)" : "All types";
+    const ttOptions = ["ga","reserved"].map(v =>
+      `<option value="${v}" ${c.ticketType===v?"selected":""}>${v==="ga"?"GA floor":"Reserved (bowl)"}</option>`
+    ).join("");
     document.getElementById("modalContent").innerHTML = `
-      <div style="font-size:12px;color:var(--text2);margin-bottom:14px;">${c.venue} · ${c.date}${c.tag ? ' · <span style="color:var(--purple-text);background:var(--purple-bg);padding:1px 7px;border-radius:4px;font-size:11px;">'+c.tag+'</span>' : ''}</div>
-      <div class="section-title">Price comparison</div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+        <span style="font-size:12px;color:var(--text2);">${c.venue} · ${c.date}</span>
+        ${c.tag ? `<span style="color:var(--purple-text);background:var(--purple-bg);padding:1px 7px;border-radius:4px;font-size:11px;">${c.tag}</span>` : ""}
+        <span style="font-size:12px;color:var(--text2);">·</span>
+        <select id="ticketTypeSel" style="font-size:12px;padding:2px 7px;border-radius:4px;border:0.5px solid var(--border-med);background:var(--surface);color:var(--text);" onchange="updateTicketType(${c.id},this.value)">${ttOptions}</select>
+      </div>
+      <div class="section-title">Price comparison <span style="font-size:11px;font-weight:400;color:var(--text3);">· ${ttLabel} tickets</span></div>
       ${sorted.map(([name, data], i) => {
         const diff = data.price - data.prev;
         const chg = diff < 0 ? `<span class="price-change price-down">↓ $${Math.abs(diff)}</span>`
@@ -464,11 +500,17 @@
       <div class="section-title">7-day price trend</div>
       <div class="sparkbars">${bars}<span style="font-size:11px;color:var(--text3);margin-left:8px;align-self:center;">7d ago → now</span></div>
       <div class="modal-actions">
-        <a class="btn-secondary" href="https://www.stubhub.com/find/s/?q=${encodeURIComponent(c.name)}" target="_blank" rel="noopener">StubHub</a>
-        <a class="btn-secondary" href="https://www.seatgeek.com/${encodeURIComponent(c.name.toLowerCase().replace(/\s+/g,'-'))}-tickets" target="_blank" rel="noopener">SeatGeek</a>
-        <a class="btn-secondary" href="https://www.ticketmaster.com/search?q=${encodeURIComponent(c.name)}" target="_blank" rel="noopener">Ticketmaster</a>
+        <a class="btn-secondary" href="${c.stubhubUrl}" target="_blank" rel="noopener">StubHub</a>
+        <a class="btn-secondary" href="${c.seatgeekUrl}" target="_blank" rel="noopener">SeatGeek</a>
+        <a class="btn-secondary" href="${c.ticketmasterUrl}" target="_blank" rel="noopener">Ticketmaster</a>
+        <a class="btn-secondary" href="${c.vividseatsUrl}" target="_blank" rel="noopener">Vivid Seats</a>
       </div>`;
     document.getElementById("modalBackdrop").classList.add("open");
+  }
+
+  function updateTicketType(id, type) {
+    const c = concerts.find(x => x.id === id);
+    if (c) { c.ticketType = type; renderGrid(); }
   }
 
   function renderAlerts() {
