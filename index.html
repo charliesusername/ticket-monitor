@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ticket Monitor</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f7f6f3;
+      --surface: #ffffff;
+      --surface2: #f1f0ec;
+      --border: rgba(0,0,0,0.1);
+      --border-med: rgba(0,0,0,0.18);
+      --text: #1a1a18;
+      --text2: #6b6b67;
+      --text3: #9e9e99;
+      --blue: #185FA5;
+      --blue-bg: #E6F1FB;
+      --blue-text: #0C447C;
+      --green: #3B6D11;
+      --green-bg: #EAF3DE;
+      --green-text: #27500A;
+      --red: #A32D2D;
+      --red-bg: #FCEBEB;
+      --red-text: #791F1F;
+      --amber-bg: #FAEEDA;
+      --amber-text: #633806;
+      --amber-border: #854F0B;
+      --purple-bg: #EEEDFE;
+      --purple-text: #3C3489;
+      --radius: 10px;
+      --radius-sm: 6px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1a1a18;
+        --surface: #232320;
+        --surface2: #2c2c2a;
+        --border: rgba(255,255,255,0.1);
+        --border-med: rgba(255,255,255,0.18);
+        --text: #f0ede8;
+        --text2: #a8a8a2;
+        --text3: #6b6b67;
+        --blue-bg: #0c1f35;
+        --blue-text: #85B7EB;
+        --green-bg: #172404;
+        --green-text: #C0DD97;
+        --red-bg: #2a1212;
+        --red-text: #F09595;
+        --amber-bg: #281a06;
+        --amber-text: #FAC775;
+        --amber-border: #EF9F27;
+        --purple-bg: #1a1840;
+        --purple-text: #AFA9EC;
+      }
+    }
+
+    body {
+      font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    header {
+      background: var(--surface);
+      border-bottom: 0.5px solid var(--border);
+      padding: 0 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .logo { font-size: 15px; font-weight: 500; letter-spacing: -0.3px; }
+    .logo span { color: var(--text2); font-weight: 400; }
+
+    .header-meta { font-size: 12px; color: var(--text3); }
+
+    main { max-width: 900px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+    .page-title { font-size: 22px; font-weight: 500; letter-spacing: -0.5px; margin-bottom: 4px; }
+    .page-sub { font-size: 13px; color: var(--text2); margin-bottom: 1.75rem; }
+
+    .tab-bar {
+      display: flex;
+      gap: 2px;
+      border-bottom: 0.5px solid var(--border);
+      margin-bottom: 1.5rem;
+    }
+    .tab {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      padding: 8px 16px;
+      font-size: 14px;
+      color: var(--text2);
+      cursor: pointer;
+      margin-bottom: -0.5px;
+      transition: color 0.15s;
+    }
+    .tab.active { color: var(--text); border-bottom-color: var(--text); font-weight: 500; }
+    .tab:hover:not(.active) { color: var(--text); }
+
+    .controls { display: flex; gap: 8px; margin-bottom: 1.25rem; }
+    .controls input, .controls select {
+      background: var(--surface);
+      border: 0.5px solid var(--border-med);
+      border-radius: var(--radius-sm);
+      padding: 8px 12px;
+      font-size: 13px;
+      color: var(--text);
+      outline: none;
+    }
+    .controls input { flex: 1; }
+    .controls input:focus, .controls select:focus { border-color: var(--blue); }
+
+    .concert-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+
+    .concert-card {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.1rem;
+      cursor: pointer;
+      transition: border-color 0.15s, transform 0.1s;
+    }
+    .concert-card:hover { border-color: var(--border-med); transform: translateY(-1px); }
+
+    .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; margin-bottom: 8px; }
+    .card-name { font-size: 14px; font-weight: 500; flex: 1; }
+    .card-meta { font-size: 12px; color: var(--text2); margin-bottom: 12px; }
+    .card-bottom { display: flex; justify-content: space-between; align-items: flex-end; }
+    .card-price-label { font-size: 11px; color: var(--text3); margin-bottom: 2px; }
+    .card-price { font-size: 22px; font-weight: 500; }
+    .card-avail { text-align: right; }
+    .card-avail-label { font-size: 11px; color: var(--text3); margin-bottom: 3px; }
+
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 2px 8px;
+      border-radius: var(--radius-sm);
+      white-space: nowrap;
+    }
+    .badge-drop { background: var(--green-bg); color: var(--green-text); }
+    .badge-up { background: var(--red-bg); color: var(--red-text); }
+    .badge-track { background: var(--blue-bg); color: var(--blue-text); }
+    .badge-purple { background: var(--purple-bg); color: var(--purple-text); }
+    .badge-amber { background: var(--amber-bg); color: var(--amber-text); }
+
+    .pip { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+    .pip-good { background: #639922; }
+    .pip-low { background: #EF9F27; }
+    .pip-out { background: #E24B4A; }
+
+    /* Modal */
+    .modal-backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 0.5px solid var(--border-med);
+      padding: 1.5rem;
+      width: 100%;
+      max-width: 520px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
+    .modal-title { font-size: 16px; font-weight: 500; }
+    .modal-close { background: none; border: none; font-size: 22px; cursor: pointer; color: var(--text2); line-height: 1; padding: 0 4px; }
+
+    .platform-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 0.5px solid var(--border);
+    }
+    .platform-row:last-child { border-bottom: none; }
+    .platform-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 8px; }
+    .platform-name { font-size: 13px; }
+    .platform-price { font-size: 18px; font-weight: 500; }
+    .price-change { font-size: 12px; margin-left: 5px; }
+    .price-up { color: var(--red); }
+    .price-down { color: var(--green); }
+
+    .sparkbars { display: flex; align-items: flex-end; gap: 3px; height: 44px; margin-top: 8px; }
+    .sbar { flex: 1; background: #B5D4F4; border-radius: 2px 2px 0 0; }
+    .sbar.low { background: #9FE1CB; }
+    .sbar.high { background: #F5C4B3; }
+    .sbar.current { background: #378ADD; }
+
+    .section-title { font-size: 13px; font-weight: 500; margin: 1.1rem 0 0.6rem; }
+
+    /* Alerts tab */
+    .alert-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 0.5px solid var(--border);
+    }
+    .alert-item:last-child { border-bottom: none; }
+    .alert-info { flex: 1; }
+    .alert-name { font-size: 13px; font-weight: 500; }
+    .alert-sub { font-size: 12px; color: var(--text2); margin-top: 1px; }
+    .btn-remove { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 20px; padding: 0 4px; line-height: 1; }
+    .btn-remove:hover { color: var(--text); }
+
+    .alert-form {
+      background: var(--surface2);
+      border-radius: var(--radius);
+      padding: 1.1rem 1.25rem;
+      margin-top: 1rem;
+    }
+    .alert-form-title { font-size: 13px; font-weight: 500; margin-bottom: 10px; }
+    .alert-form-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .alert-form-row select, .alert-form-row input {
+      background: var(--surface);
+      border: 0.5px solid var(--border-med);
+      border-radius: var(--radius-sm);
+      padding: 8px 10px;
+      font-size: 13px;
+      color: var(--text);
+      outline: none;
+      flex: 1;
+      min-width: 120px;
+    }
+    .alert-form-row input[type=number] { flex: 0 0 80px; min-width: 80px; }
+    .btn-primary {
+      background: var(--text);
+      color: var(--bg);
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 8px 16px;
+      font-size: 13px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .btn-primary:hover { opacity: 0.85; }
+
+    /* History tab */
+    .history-card {
+      background: var(--surface);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.1rem;
+      margin-bottom: 10px;
+    }
+    .history-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .history-name { font-size: 14px; font-weight: 500; }
+    .history-meta { display: flex; justify-content: space-between; margin-top: 5px; font-size: 11px; color: var(--text3); }
+
+    .empty { text-align: center; padding: 3rem 1rem; color: var(--text2); font-size: 14px; }
+
+    .modal-actions { display: flex; gap: 8px; margin-top: 1.25rem; }
+    .btn-secondary {
+      flex: 1;
+      background: var(--surface2);
+      color: var(--text);
+      border: 0.5px solid var(--border-med);
+      border-radius: var(--radius-sm);
+      padding: 9px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+    }
+    .btn-secondary:hover { background: var(--border); }
+
+    @media (max-width: 600px) {
+      main { padding: 1.25rem 1rem; }
+      header { padding: 0 1rem; }
+      .concert-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Ticket Monitor <span>/ concerts</span></div>
+  <div class="header-meta" id="lastUpdated">Updated just now</div>
+</header>
+
+<main>
+  <div class="page-title">My watchlist</div>
+  <div class="page-sub">Tracking prices across StubHub, SeatGeek, Ticketmaster & Vivid Seats</div>
+
+  <div class="tab-bar">
+    <button class="tab active" data-tab="watchlist">Watchlist</button>
+    <button class="tab" data-tab="alerts">Price alerts</button>
+    <button class="tab" data-tab="history">Price history</button>
+  </div>
+
+  <div id="tab-watchlist">
+    <div class="controls">
+      <input type="text" id="searchInput" placeholder="Search concerts..." />
+      <select id="sortSelect">
+        <option value="name">Sort: Name</option>
+        <option value="lowest">Lowest price</option>
+        <option value="drop">Biggest drop</option>
+      </select>
+    </div>
+    <div class="concert-grid" id="concertGrid"></div>
+  </div>
+
+  <div id="tab-alerts" style="display:none;">
+    <div id="alertList"></div>
+    <div class="alert-form">
+      <div class="alert-form-title">Set a new alert</div>
+      <div class="alert-form-row">
+        <select id="alertConcert"></select>
+        <select id="alertPlatform">
+          <option value="any">Any platform</option>
+          <option value="StubHub">StubHub</option>
+          <option value="SeatGeek">SeatGeek</option>
+          <option value="Ticketmaster">Ticketmaster</option>
+          <option value="Vivid Seats">Vivid Seats</option>
+        </select>
+        <input type="number" id="alertPrice" placeholder="$" min="1" />
+        <button class="btn-primary" id="addAlertBtn">Add alert</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="tab-history" style="display:none;">
+    <div id="historyList"></div>
+  </div>
+</main>
+
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle"></div>
+      <button class="modal-close" id="modalClose">×</button>
+    </div>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<script>
+  const concerts = [
+    { id: 1, name: "Taylor Swift — Eras Tour", venue: "MetLife Stadium", date: "Jun 14, 2026",
+      platforms: { StubHub: { price: 389, prev: 420, avail: "good" }, SeatGeek: { price: 361, prev: 355, avail: "low" }, Ticketmaster: { price: 410, prev: 410, avail: "good" }, "Vivid Seats": { price: 375, prev: 395, avail: "good" } } },
+    { id: 2, name: "Kendrick Lamar — GNX Tour", venue: "Barclays Center", date: "Jul 2, 2026",
+      platforms: { StubHub: { price: 210, prev: 230, avail: "good" }, SeatGeek: { price: 198, prev: 198, avail: "good" }, Ticketmaster: { price: 225, prev: 200, avail: "low" }, "Vivid Seats": { price: 205, prev: 215, avail: "good" } } },
+    { id: 3, name: "Chappell Roan", venue: "Madison Square Garden", date: "Aug 8, 2026",
+      platforms: { StubHub: { price: 145, prev: 160, avail: "low" }, SeatGeek: { price: 139, prev: 142, avail: "low" }, Ticketmaster: { price: 155, prev: 148, avail: "out" }, "Vivid Seats": { price: 149, prev: 155, avail: "low" } } },
+    { id: 4, name: "Billie Eilish — Hit Me Hard", venue: "UBS Arena", date: "Sep 19, 2026",
+      platforms: { StubHub: { price: 275, prev: 260, avail: "good" }, SeatGeek: { price: 262, prev: 255, avail: "good" }, Ticketmaster: { price: 290, prev: 285, avail: "good" }, "Vivid Seats": { price: 270, prev: 278, avail: "good" } } },
+    { id: 5, name: "King Gizzard & the Lizard Wizard", venue: "Forest Hills Stadium", date: "Aug 22, 2026",
+      tag: "Night 3 — rave set",
+      platforms: { StubHub: { price: 168, prev: 168, avail: "low" }, SeatGeek: { price: 142, prev: 155, avail: "low" }, Ticketmaster: { price: 175, prev: 170, avail: "low" }, "Vivid Seats": { price: 159, prev: 163, avail: "low" } } },
+  ];
+
+  const history = {
+    1: [420,415,408,412,400,392,389],
+    2: [245,238,230,222,215,212,198],
+    3: [175,168,162,155,150,143,139],
+    4: [255,258,262,265,268,264,262],
+    5: [168,165,162,158,155,150,142],
+  };
+
+  let alerts = [
+    { id: 1, concertId: 1, concert: "Taylor Swift — Eras Tour", platform: "any", targetPrice: 350 },
+    { id: 2, concertId: 3, concert: "Chappell Roan", platform: "SeatGeek", targetPrice: 130 },
+    { id: 3, concertId: 5, concert: "King Gizzard & the Lizard Wizard", platform: "any", targetPrice: 150 },
+  ];
+  let alertSeq = 4;
+
+  const platformColors = { StubHub: "#1a56db", SeatGeek: "#856404", Ticketmaster: "#c81e1e", "Vivid Seats": "#046c4e" };
+
+  function lowestPrice(c) { return Math.min(...Object.values(c.platforms).map(p => p.price)); }
+  function biggestDrop(c) { return Math.max(...Object.values(c.platforms).map(p => p.prev - p.price)); }
+
+  function availClass(a) { return { good: "pip-good", low: "pip-low", out: "pip-out" }[a]; }
+  function availLabel(a) { return { good: "Available", low: "Limited", out: "Sold out" }[a]; }
+  function overallAvail(c) {
+    const avails = Object.values(c.platforms).map(p => p.avail);
+    return avails.includes("good") ? "good" : avails.includes("low") ? "low" : "out";
+  }
+
+  function renderGrid() {
+    const q = document.getElementById("searchInput").value.toLowerCase();
+    const sort = document.getElementById("sortSelect").value;
+    let list = concerts.filter(c => c.name.toLowerCase().includes(q) || c.venue.toLowerCase().includes(q));
+    if (sort === "lowest") list.sort((a, b) => lowestPrice(a) - lowestPrice(b));
+    else if (sort === "drop") list.sort((a, b) => biggestDrop(b) - biggestDrop(a));
+    const grid = document.getElementById("concertGrid");
+    if (!list.length) { grid.innerHTML = '<div class="empty">No concerts match your search.</div>'; return; }
+    grid.innerHTML = list.map(c => {
+      const low = lowestPrice(c);
+      const drop = biggestDrop(c);
+      const badge = drop > 15 ? `<span class="badge badge-drop">↓ $${drop} drop</span>`
+        : drop < -10 ? `<span class="badge badge-up">↑ rising</span>`
+        : c.tag ? `<span class="badge badge-purple">${c.tag}</span>`
+        : `<span class="badge badge-track">Tracking</span>`;
+      const oa = overallAvail(c);
+      return `<div class="concert-card" onclick="openDetail(${c.id})">
+        <div class="card-top"><div class="card-name">${c.name}</div>${badge}</div>
+        <div class="card-meta">${c.venue} · ${c.date}</div>
+        <div class="card-bottom">
+          <div><div class="card-price-label">Lowest price</div><div class="card-price">$${low}</div></div>
+          <div class="card-avail">
+            <div class="card-avail-label">Availability</div>
+            <div style="font-size:13px;"><span class="pip ${availClass(oa)}"></span>${availLabel(oa)}</div>
+          </div>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  function openDetail(id) {
+    const c = concerts.find(x => x.id === id);
+    if (!c) return;
+    document.getElementById("modalTitle").textContent = c.name;
+    const sorted = Object.entries(c.platforms).sort((a, b) => a[1].price - b[1].price);
+    const hist = history[id] || [];
+    const min = Math.min(...hist), max = Math.max(...hist);
+    const bars = hist.map((v, i, arr) => {
+      const h = max === min ? 28 : Math.round(6 + 38 * (v - min) / (max - min));
+      const cls = i === arr.length - 1 ? "current" : v === min ? "low" : v === max ? "high" : "";
+      return `<div class="sbar ${cls}" style="height:${h}px;" title="$${v}"></div>`;
+    }).join("");
+    document.getElementById("modalContent").innerHTML = `
+      <div style="font-size:12px;color:var(--text2);margin-bottom:14px;">${c.venue} · ${c.date}${c.tag ? ' · <span style="color:var(--purple-text);background:var(--purple-bg);padding:1px 7px;border-radius:4px;font-size:11px;">'+c.tag+'</span>' : ''}</div>
+      <div class="section-title">Price comparison</div>
+      ${sorted.map(([name, data], i) => {
+        const diff = data.price - data.prev;
+        const chg = diff < 0 ? `<span class="price-change price-down">↓ $${Math.abs(diff)}</span>`
+          : diff > 0 ? `<span class="price-change price-up">↑ $${diff}</span>`
+          : `<span class="price-change" style="color:var(--text3);">—</span>`;
+        return `<div class="platform-row">
+          <div style="display:flex;align-items:center;gap:8px;">
+            ${i === 0 ? '<span style="font-size:11px;color:var(--green);font-weight:500;">Best</span>' : '<span style="width:28px;"></span>'}
+            <span class="platform-dot" style="background:${platformColors[name]};"></span>
+            <span class="platform-name">${name}</span>
+          </div>
+          <div style="text-align:right;">
+            <span class="platform-price">$${data.price}</span>${chg}
+            <div style="font-size:11px;color:var(--text3);margin-top:2px;"><span class="pip ${availClass(data.avail)}"></span>${availLabel(data.avail)}</div>
+          </div>
+        </div>`;
+      }).join("")}
+      <div class="section-title">7-day price trend</div>
+      <div class="sparkbars">${bars}<span style="font-size:11px;color:var(--text3);margin-left:8px;align-self:center;">7d ago → now</span></div>
+      <div class="modal-actions">
+        <a class="btn-secondary" href="https://www.stubhub.com/find/s/?q=${encodeURIComponent(c.name)}" target="_blank" rel="noopener">StubHub</a>
+        <a class="btn-secondary" href="https://www.seatgeek.com/${encodeURIComponent(c.name.toLowerCase().replace(/\s+/g,'-'))}-tickets" target="_blank" rel="noopener">SeatGeek</a>
+        <a class="btn-secondary" href="https://www.ticketmaster.com/search?q=${encodeURIComponent(c.name)}" target="_blank" rel="noopener">Ticketmaster</a>
+      </div>`;
+    document.getElementById("modalBackdrop").classList.add("open");
+  }
+
+  function renderAlerts() {
+    const sel = document.getElementById("alertConcert");
+    sel.innerHTML = concerts.map(c => `<option value="${c.id}">${c.name}</option>`).join("");
+    const list = document.getElementById("alertList");
+    if (!alerts.length) { list.innerHTML = '<div class="empty">No alerts set. Add one below.</div>'; return; }
+    list.innerHTML = alerts.map(a => {
+      const c = concerts.find(x => x.id === a.concertId);
+      const low = c ? lowestPrice(c) : null;
+      const hit = low !== null && low <= a.targetPrice;
+      return `<div class="alert-item">
+        <span class="badge ${hit ? 'badge-drop' : 'badge-amber'}" style="min-width:56px;text-align:center;">${hit ? '✓ Hit!' : 'Watching'}</span>
+        <div class="alert-info">
+          <div class="alert-name">${a.concert}</div>
+          <div class="alert-sub">${a.platform === "any" ? "Any platform" : a.platform} below <strong>$${a.targetPrice}</strong>${low !== null ? ' · Now: $' + low : ''}</div>
+        </div>
+        <button class="btn-remove" onclick="removeAlert(${a.id})">×</button>
+      </div>`;
+    }).join("");
+  }
+
+  function removeAlert(id) { alerts = alerts.filter(a => a.id !== id); renderAlerts(); }
+
+  function renderHistory() {
+    document.getElementById("historyList").innerHTML = concerts.map(c => {
+      const data = history[c.id] || [];
+      const min = Math.min(...data), max = Math.max(...data);
+      const current = data[data.length - 1], first = data[0];
+      const diff = current - first;
+      const bars = data.map((v, i, arr) => {
+        const h = max === min ? 28 : Math.round(6 + 44 * (v - min) / (max - min));
+        const cls = i === arr.length - 1 ? "current" : v === min ? "low" : v === max ? "high" : "";
+        return `<div class="sbar ${cls}" style="height:${h}px;flex:1;" title="$${v}"></div>`;
+      }).join("");
+      return `<div class="history-card">
+        <div class="history-card-top">
+          <div class="history-name">${c.name}</div>
+          <span class="${diff < 0 ? 'price-down' : 'price-up'}" style="font-size:13px;">${diff < 0 ? '↓' : '↑'} $${Math.abs(diff)} over 7 days</span>
+        </div>
+        <div class="sparkbars" style="height:52px;">${bars}</div>
+        <div class="history-meta">
+          <span>7d ago: $${first}</span>
+          <span style="color:var(--green);">Low: $${min}</span>
+          <span style="color:var(--red);">High: $${max}</span>
+          <span>Now: $${current}</span>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
+    t.classList.add("active");
+    ["watchlist","alerts","history"].forEach(id => document.getElementById("tab-"+id).style.display = "none");
+    const tab = t.dataset.tab;
+    document.getElementById("tab-"+tab).style.display = "";
+    if (tab === "alerts") renderAlerts();
+    if (tab === "history") renderHistory();
+  }));
+
+  document.getElementById("searchInput").addEventListener("input", renderGrid);
+  document.getElementById("sortSelect").addEventListener("change", renderGrid);
+  document.getElementById("modalClose").addEventListener("click", () => document.getElementById("modalBackdrop").classList.remove("open"));
+  document.getElementById("modalBackdrop").addEventListener("click", e => { if (e.target === document.getElementById("modalBackdrop")) document.getElementById("modalBackdrop").classList.remove("open"); });
+
+  document.getElementById("addAlertBtn").addEventListener("click", () => {
+    const cId = parseInt(document.getElementById("alertConcert").value);
+    const platform = document.getElementById("alertPlatform").value;
+    const price = parseInt(document.getElementById("alertPrice").value);
+    const c = concerts.find(x => x.id === cId);
+    if (!c || !price || price < 1) return;
+    alerts.push({ id: alertSeq++, concertId: cId, concert: c.name, platform, targetPrice: price });
+    document.getElementById("alertPrice").value = "";
+    renderAlerts();
+  });
+
+  document.getElementById("lastUpdated").textContent = "Updated " + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  renderGrid();
+</script>
+</body>
+</html>
